@@ -256,6 +256,15 @@ function calc(b){
 }
 
 /* ===== Connexion ===== */
+function authMsg(err){
+  const c=err&&err.code||"";
+  if(c==="auth/operation-not-allowed") return "Firebase : active « E-mail/Mot de passe » dans Authentication.";
+  if(c==="auth/configuration-not-found") return "Firebase : Authentication n'est pas activé sur le projet.";
+  if(c==="auth/too-many-requests") return "Trop d'essais, réessaie plus tard.";
+  if(c==="auth/network-request-failed") return "Pas de connexion internet.";
+  if(["auth/invalid-credential","auth/wrong-password","auth/user-not-found","auth/invalid-email","auth/email-already-in-use"].includes(c)) return "Nom ou code incorrect.";
+  return "Erreur : "+(c||err?.message||"inconnue");
+}
 $("loginForm").onsubmit = async e => {
   e.preventDefault();
   const n=$("lName").value, c=$("lCode").value, em=emailOf(n);
@@ -266,9 +275,9 @@ $("loginForm").onsubmit = async e => {
     // Premier lancement : création automatique du compte administrateur
     if(em===ADMIN_EMAIL && sha256("tb|james|"+c.trim())===ADMIN_HASH && ["auth/invalid-credential","auth/user-not-found"].includes(err.code)){
       try{ await createUserWithEmailAndPassword(auth, em, pwOf(c)); }
-      catch(e2){ $("lErr").textContent="Nom ou code incorrect."; }
+      catch(e2){ $("lErr").textContent=authMsg(e2); }
     } else {
-      $("lErr").textContent = err.code==="auth/too-many-requests" ? "Trop d'essais, réessaie plus tard." : "Nom ou code incorrect.";
+      $("lErr").textContent = authMsg(err);
     }
   }
   $("lBtn").disabled=false; $("lBtn").textContent="Se connecter";
